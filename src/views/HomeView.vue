@@ -5,9 +5,6 @@ import ToothBrush from '@/components/ToothBrush.vue'
 const rows = 15
 const cols = 30
 
-
-
-
 const itemRefs = ref<{ element: HTMLElement }[] | []>([])
 const itemIndices = ref<{ [key: string]: number }>({})
 
@@ -45,8 +42,6 @@ const animateGrid = (index: number) => {
 
     currentElement.element.classList.add('animated')
     currentElement.element.classList.remove('animate')
-
-    // currentElement.element.style.animationPlayState = 'paused'
     currentElement.element.style.animationName = 'popOut'
 
     const neighbors = getNeighbors(currentElement.element)
@@ -108,12 +103,12 @@ onMounted(() => {
     </div>
 
     <ToothBrush
-      ref="itemRefs"
       v-for="(element, i) in elements"
       :key="`${i}-toothbrush`"
+      ref="itemRefs"
       class="animate pop"
-      v-bind="{ ...element }"
       :style="`--delay: ${element.delay}`"
+      v-bind="{ ...element }"
       @click="animateGrid(i)"
     />
   </main>
@@ -187,10 +182,9 @@ main {
   transform: scale(1);
   opacity: 1;
   &:hover:not(:active) {
-    transform: scale(1.1);
+    transform: scale(1.5);
     cursor: pointer;
   }
-
 }
 
 .animated {
