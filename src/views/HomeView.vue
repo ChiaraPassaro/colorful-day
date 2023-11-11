@@ -14,7 +14,7 @@ onMounted(() => {
   itemRefs.value.forEach((item) => {
     item.element.addEventListener('animationend', (event) => {
       const target = event.target as HTMLElement
-
+      
       target.classList.add('popped')
       target.classList.remove('animate')
       item.element.removeEventListener('animationend', () => undefined)
@@ -108,6 +108,7 @@ const getNeighbors = (currentElement: HTMLElement) => {
       :key="`${i}-toothbrush`"
       class="animate pop"
       v-bind="{ ...element }"
+      :style="`--delay: ${element.delay}`"
       @click="animateGrid(i)"
     />
   </main>
@@ -208,28 +209,6 @@ main {
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
   animation-timing-function: ease-out;
-}
-
-@keyframes opacity {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes hide {
-  0% {
-    transform: scale(2);
-  }
-  30% {
-    transform: scale(1);
-  }
-  100% {
-    transform: scale(0);
-  }
 }
 
 @keyframes pop {
