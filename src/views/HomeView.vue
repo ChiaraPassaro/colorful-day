@@ -186,7 +186,7 @@ main {
   transform: scale(1);
   opacity: 1;
   &:hover:not(:active) {
-    transform: scale(2);
+    transform: scale(1.1);
     z-index: 9;
     cursor: pointer;
   }
