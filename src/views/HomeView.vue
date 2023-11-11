@@ -50,7 +50,7 @@ const animateGrid = (index: number) => {
     )
 
     queue.push(...unanimatedNeighbors)
-    timeout = setTimeout(animateNext, 0)
+    timeout = setTimeout(animateNext, 1)
   }
   animateNext()
 }
