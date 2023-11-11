@@ -1,26 +1,32 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, nextTick, onUnmounted } from 'vue'
 import ToothBrush from '@/components/ToothBrush.vue'
 
-const rows = 12
-const cols = 13
+const rows = 15
+const cols = 30
 
-const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
+const cellWidth = ref(window.innerWidth / cols) 
+const cellHeight = ref(window.innerHeight / rows) 
+
+const resizeHandler = () => {
+  nextTick(() => {
+    cellWidth.value = window.innerWidth / cols
+    cellHeight.value = window.innerHeight / rows
+  })
+}
+
+onMounted(() => {
+  window.addEventListener('resize', resizeHandler)
+})
+
+onUnmounted(() => {
+    window.removeEventListener('resize', resizeHandler)
+})
 
 const itemRefs = ref<{ element: HTMLElement }[] | []>([])
 const itemIndices = ref<{ [key: string]: number }>({})
 
-onMounted(() => {
-  itemRefs.value.forEach((item) => {
-    item.element.addEventListener('animationend', (event) => {
-      const target = event.target as HTMLElement
-      
-      target.classList.add('popped')
-      target.classList.remove('animate')
-      item.element.removeEventListener('animationend', () => undefined)
-    })
-  })
-})
+const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
 
 const elements = ref(
   Array.from({ length: rows * cols }).map((_, i) => {
@@ -92,6 +98,19 @@ const getNeighbors = (currentElement: HTMLElement) => {
 
   return neighborIndices.map((index) => itemRefs.value[index])
 }
+
+
+onMounted(() => {
+  itemRefs.value.forEach((item) => {
+    item.element.addEventListener('animationend', (event) => {
+      const target = event.target as HTMLElement
+      
+      target.classList.add('popped')
+      target.classList.remove('animate')
+      item.element.removeEventListener('animationend', () => undefined)
+    })
+  })
+})
 </script>
 
 <template>
@@ -102,9 +121,10 @@ const getNeighbors = (currentElement: HTMLElement) => {
         colorfull day!
       </h1>
     </div>
+
     <ToothBrush
-      v-for="(element, i) in elements"
       ref="itemRefs"
+      v-for="(element, i) in elements"
       :key="`${i}-toothbrush`"
       class="animate pop"
       v-bind="{ ...element }"
@@ -116,6 +136,7 @@ const getNeighbors = (currentElement: HTMLElement) => {
 
 <style lang="scss">
 
+
 main {
   position: relative;
   width: 100%;
@@ -124,11 +145,12 @@ main {
   padding-left: 25%;
   background-image: radial-gradient(#ffffff, #ff00ff);
   display: grid;
-  grid-template-columns: repeat(v-bind(cols), calc(100% / v-bind(cols)));
-  grid-template-rows: repeat(v-bind(rows), 100px);
+  grid-template-columns: repeat(v-bind(cols), 1fr);
+  grid-template-rows: repeat(v-bind(rows), 1fr);
   align-items: stretch;
   align-content: stretch;
 }
+
 .overlay {
   position: absolute;
   top: 16%;
@@ -137,20 +159,15 @@ main {
 }
 .overlay::after {
   content: '';
-  position: relative;
-  left: 0;
   z-index: 1;
+  position: relative;
+  margin-top: -2px;
+  left: 0;
   display: block;
   width: 100%;
   height: 0.1rem;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
-  animation-name: opacity;
-  animation-duration: 0.3s;
-  animation-iteration-count: 1;
-  animation-fill-mode: backwards;
-  animation-delay: 10s;
 }
-
 .overlay-title {
   position: relative;
   z-index: 2;
@@ -158,21 +175,20 @@ main {
   left: 50%;
   transform: translate(-50%, 0);
   display: flex;
-  justify-content: flex-end;
   align-items: center;
   width: 100%;
-  padding: 3rem 2rem 1.8rem 2rem;
+  padding: 3rem 2rem 1.8rem 25%;
   background-color: white;
   mix-blend-mode: lighten;
   font-family: 'Gluten', 'Arial';
   color: black;
-  font-size: 8rem;
-  line-height: 6rem;
-  letter-spacing: 0.4rem;
+  font-size: clamp(3rem, 7vw, 7.8rem);
+  line-height: clamp(2.7rem, 6vw, 6rem);
 }
 
 .pop {
   height: 100%;
+  padding: 1.5vh 1vw;
   animation-delay: var(--delay);
   will-change: transform, z-index;
   transition: transform 0.2s linear, z-index 0.2s linear;
@@ -187,9 +203,9 @@ main {
   opacity: 1;
   &:hover:not(:active) {
     transform: scale(1.1);
-    z-index: 9;
     cursor: pointer;
   }
+
 }
 
 .animated {
@@ -239,4 +255,5 @@ main {
     transform: scale(0);
   }
 }
+
 </style>
