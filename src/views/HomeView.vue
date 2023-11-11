@@ -15,6 +15,7 @@ const catIndices = ref<{ [key: string]: number }>({})
 
 const step = ref(0)
 const steps : string[] = ['toothbrush', 'cat']
+const gridAnimated = ref(false)
 
 const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
 
@@ -22,7 +23,7 @@ const toothbrushes = ref(
   Array.from({ length: rows * cols }).map((_, i) => {
     const row = Math.floor(i / rows)
     const col = i % cols
-    const delay = delayCalculation(col, row)
+    const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
     const id = `toothbrush-${i}`
     itemIndices.value[id] = i
 
@@ -34,7 +35,7 @@ const cats = ref(
   Array.from({ length: rows * cols }).map((_, i) => {
     const row = Math.floor(i / rows)
     const col = i % cols
-    const delay = delayCalculation(col, row)
+    const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
     const id = `cat-${i}`
     catIndices.value[id] = i
 
@@ -58,6 +59,7 @@ const animateGrid = (index: number, items: { element: HTMLElement; }[], indices:
         element.classList.add('animate')
         element.classList.remove('animate')
       })
+      gridAnimated.value = true
       return
     }
 
@@ -137,6 +139,11 @@ const animationEnd = (event: AnimationEvent) => {
         @animationend.prevent="animationEnd"
         @click="animateGrid(i, itemRefs, itemIndices)"
       />
+      <ToothBrush
+        v-if="steps[step] === 'toothbrush' && gridAnimated"
+        class="pulse toothbrush bg"
+        v-bind="{ ...itemRefs[1], id: 'toothbrush' }"
+      />
     </template>
 
 
@@ -152,12 +159,17 @@ const animationEnd = (event: AnimationEvent) => {
        @click="animateGrid(j, catRefs, catIndices)"
      />
     </template>
+    <CatComponent
+     v-if="steps[step] === 'cat' && gridAnimated"
+
+       class="pulse cat bg"
+       v-bind="{ ...cats[1], id: 'cat' }"
+     />
+    
   </main>
 </template>
 
 <style lang="scss">
-
-
 main {
   position: relative;
   width: 100%;
@@ -211,15 +223,14 @@ main {
   height: 100%;
   padding: 1.5vh 1vw;
   animation-delay: var(--delay);
-  will-change: transform, z-index;
-  transition: transform 0.2s linear, z-index 0.2s linear;
-  
+  will-change: all;
+  transition: all 0.2s linear;
 }
-.pop.toothbrush svg {
+.toothbrush svg {
   height: 200%;
   transform: rotate(35deg);
 }
-.pop.cat svg {
+.cat svg {
   height: 150%;
   transform: rotate(15deg);
 }
@@ -249,6 +260,32 @@ main {
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
   animation-timing-function: ease-out;
+}
+
+.bg {
+  position: absolute;
+  bottom: 10%;
+  right:  10%;
+  transform: translate(-50%, -50%);
+  animation-name: pulse;
+  animation-iteration-count: 3;
+  animation-fill-mode: forwards;
+  animation-duration: 0.5s;
+  z-index: 10;
+  width: 5vw;
+  height: 5vw;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 @keyframes pop {
