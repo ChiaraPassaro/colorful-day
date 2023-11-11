@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref} from 'vue'
+import { ref } from 'vue'
 import ToothBrush from '@/components/ToothBrush.vue'
-import CatComponent from '@/components/CatComponent.vue';
+import CatComponent from '@/components/CatComponent.vue'
 
 const rows = 15
 const cols = 30
@@ -12,9 +12,8 @@ const itemIndices = ref<{ [key: string]: number }>({})
 const catRefs = ref<{ element: HTMLElement }[] | []>([])
 const catIndices = ref<{ [key: string]: number }>({})
 
-
 const step = ref(0)
-const steps : string[] = ['toothbrush', 'cat']
+const steps: string[] = ['toothbrush', 'cat']
 const gridAnimated = ref(false)
 
 const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
@@ -43,18 +42,20 @@ const cats = ref(
   })
 )
 
-
-const animateGrid = (index: number, items: { element: HTMLElement; }[], indices: { [key: string]: number }) => {
-  
+const animateGrid = (
+  index: number,
+  items: { element: HTMLElement }[],
+  indices: { [key: string]: number }
+) => {
   const queue = [items[index]]
 
   let timeout: number | undefined = undefined
 
   const animateNext = () => {
     timeout && (timeout = undefined)
-    
-    if (!queue.length) {      
-      step.value < steps.length - 1 ? step.value++ : step.value = 0
+
+    if (!queue.length) {
+      step.value < steps.length - 1 ? step.value++ : (step.value = 0)
       items.forEach(({ element }) => {
         element.classList.add('animate')
         element.classList.remove('animate')
@@ -87,12 +88,16 @@ const animateGrid = (index: number, items: { element: HTMLElement; }[], indices:
   animateNext()
 }
 
-const getNeighbors = (currentElement: HTMLElement, items: { element: HTMLElement; }[], indices: { [key: string]: number }) => {
+const getNeighbors = (
+  currentElement: HTMLElement,
+  items: { element: HTMLElement }[],
+  indices: { [key: string]: number }
+) => {
   const id = currentElement.getAttribute('id')!
   const index = indices[id]
 
-  const row = Math.floor(index / cols) 
-  const col = index % cols 
+  const row = Math.floor(index / cols)
+  const col = index % cols
   const neighbors = [
     { row: row + 1, col: col }, // sotto
     { row: row, col: col - 1 }, // sinistra
@@ -112,11 +117,10 @@ const getNeighbors = (currentElement: HTMLElement, items: { element: HTMLElement
 }
 
 const animationEnd = (event: AnimationEvent) => {
-   const target = event.target as HTMLElement      
-      target.classList.add('popped')
-      target.classList.remove('animate')
+  const target = event.target as HTMLElement
+  target.classList.add('popped')
+  target.classList.remove('animate')
 }
-
 </script>
 
 <template>
@@ -141,31 +145,28 @@ const animationEnd = (event: AnimationEvent) => {
       />
       <ToothBrush
         v-if="steps[step] === 'toothbrush' && gridAnimated"
-        class="pulse toothbrush bg"
+        class="pulse toothbrush element-pulse"
         v-bind="{ ...itemRefs[1], id: 'toothbrush' }"
       />
     </template>
 
-
     <template v-if="steps[step] === 'cat'">
       <CatComponent
-       v-for="(element, j) in cats"
-       :key="`${j}-cat`"
-       ref="catRefs"
-       class="animate pop cat"
-       :style="`--delay: ${element.delay}`"
-       v-bind="{ ...element }"
-       @animationend.prevent="animationEnd"
-       @click="animateGrid(j, catRefs, catIndices)"
-     />
+        v-for="(element, j) in cats"
+        :key="`${j}-cat`"
+        ref="catRefs"
+        class="animate pop cat"
+        :style="`--delay: ${element.delay}`"
+        v-bind="{ ...element }"
+        @animationend.prevent="animationEnd"
+        @click="animateGrid(j, catRefs, catIndices)"
+      />
     </template>
     <CatComponent
-     v-if="steps[step] === 'cat' && gridAnimated"
-
-       class="pulse cat bg"
-       v-bind="{ ...cats[1], id: 'cat' }"
-     />
-    
+      v-if="steps[step] === 'cat' && gridAnimated"
+      class="pulse cat element-pulse"
+      v-bind="{ ...cats[1], id: 'cat' }"
+    />
   </main>
 </template>
 
@@ -262,10 +263,10 @@ main {
   animation-timing-function: ease-out;
 }
 
-.bg {
+.element-pulse {
   position: absolute;
   bottom: 10%;
-  right:  10%;
+  right: 10%;
   transform: translate(-50%, -50%);
   animation-name: pulse;
   animation-iteration-count: 3;
@@ -317,5 +318,4 @@ main {
     transform: scale(0);
   }
 }
-
 </style>
