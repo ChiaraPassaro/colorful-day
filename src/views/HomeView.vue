@@ -115,7 +115,6 @@ const getNeighbors = (currentElement: HTMLElement) => {
 </template>
 
 <style lang="scss">
-@import url('https://fonts.googleapis.com/css2?family=Gluten');
 
 main {
   position: relative;
@@ -165,7 +164,7 @@ main {
   padding: 3rem 2rem 1.8rem 2rem;
   background-color: white;
   mix-blend-mode: lighten;
-  font-family: 'Gluten', cursive;
+  font-family: 'Gluten', 'Arial';
   color: black;
   font-size: 8rem;
   line-height: 6rem;
