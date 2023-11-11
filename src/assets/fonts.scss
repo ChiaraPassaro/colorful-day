@@ -1,0 +1,32 @@
+@font-face {
+  font-family: 'Gluten';
+  src: local("Gluten"), url('/fonts/Gluten/woff2/Gluten-Medium.woff2') format('woff2'),
+       url('/fonts/Gluten/woff/Gluten-Medium.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Gluten';
+  src: local("Gluten"), url('/fonts/Gluten/woff2/Gluten-Regular.woff2') format('woff2'),
+       url('/fonts/Gluten/woff/Gluten-Regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Gluten';
+  src: local("Gluten"), url('/fonts/Gluten/woff2/Gluten-Bold.woff2') format('woff2'),
+       url('/fonts/Gluten/woff/Gluten-Bold.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Gluten';
+  src: local("Gluten"), url('/fonts/Gluten/woff2/Gluten-Black.woff2') format('woff2'),
+       url('/fonts/Gluten/woff/Gluten-Black.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+}
+
