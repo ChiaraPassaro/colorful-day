@@ -1,27 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, nextTick, onUnmounted } from 'vue'
+import { onMounted, ref} from 'vue'
 import ToothBrush from '@/components/ToothBrush.vue'
 
 const rows = 15
 const cols = 30
 
-const cellWidth = ref(window.innerWidth / cols) 
-const cellHeight = ref(window.innerHeight / rows) 
 
-const resizeHandler = () => {
-  nextTick(() => {
-    cellWidth.value = window.innerWidth / cols
-    cellHeight.value = window.innerHeight / rows
-  })
-}
 
-onMounted(() => {
-  window.addEventListener('resize', resizeHandler)
-})
-
-onUnmounted(() => {
-    window.removeEventListener('resize', resizeHandler)
-})
 
 const itemRefs = ref<{ element: HTMLElement }[] | []>([])
 const itemIndices = ref<{ [key: string]: number }>({})
