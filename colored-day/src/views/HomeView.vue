@@ -1,8 +1,95 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import ToothBrush from '@/components/ToothBrush.vue'
 
-const hide = ref(false)
+const rows = 12
+const cols = 10
+
+const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
+
+const itemRefs = ref<{ element: HTMLElement }[] | []>([])
+const itemIndices = ref<{ [key: string]: number }>({})
+
+onMounted(() => {
+  itemRefs.value.forEach((item) => {
+    item.element.addEventListener('animationend', (e) => {
+      e.target.classList.add('popped')
+      e.target.classList.remove('animation')
+      item.element.removeEventListener('animationend', (e) => {})
+    })
+  })
+})
+
+const elements = ref(
+  Array.from({ length: rows * cols }).map((_, i) => {
+    const row = Math.floor(i / rows)
+    const col = i % cols
+    const delay = delayCalculation(col, row)
+    const id = `toothbrush-${i}`
+    itemIndices.value[id] = i
+
+    return col % 2 !== 0 ? { color3: '#f219dd', color4: '#7c1477', delay, id } : { delay, id }
+  })
+)
+
+const animateGrid = (index: number) => {
+  const queue = [itemRefs.value[index]]
+  let timeout: number | undefined = undefined
+
+  const animateNext = () => {
+    timeout && (timeout = undefined)
+
+    if (!queue.length) return
+
+    const currentElement = queue.shift()
+
+    if (!currentElement) return
+
+    if (currentElement.element.classList.contains('animated')) {
+      requestAnimationFrame(animateNext)
+      return
+    }
+
+    currentElement.element.classList.add('animated')
+    currentElement.element.classList.remove('animation')
+
+    // currentElement.element.style.animationPlayState = 'paused'
+    currentElement.element.style.animationName = 'popOut'
+
+    const neighbors = getNeighbors(currentElement.element)
+    const unanimatedNeighbors = neighbors.filter(
+      (neighbor) => !neighbor.element.classList.contains('animated')
+    )
+
+    queue.push(...unanimatedNeighbors)
+    timeout = setTimeout(animateNext, 0)
+  }
+  animateNext()
+}
+
+const getNeighbors = (currentElement: HTMLElement) => {
+  const id = currentElement.getAttribute('id')!
+  const index = itemIndices.value[id]
+
+  const row = Math.floor(index / cols) // usa cols qui
+  const col = index % cols // usa cols qui
+  const neighbors = [
+    { row: row + 1, col: col }, // sotto
+    { row: row, col: col - 1 }, // sinistra
+    { row: row - 1, col: col }, // sopra
+    { row: row, col: col + 1 } // destra
+  ]
+
+  const validNeighbors = neighbors.filter(({ row, col }) => {
+    return row >= 0 && row < rows && col >= 0 && col < cols
+  })
+
+  const neighborIndices = validNeighbors.map(({ row, col }) => {
+    return row * cols + col
+  })
+
+  return neighborIndices.map((index) => itemRefs.value[index])
+}
 </script>
 
 <template>
@@ -13,30 +100,14 @@ const hide = ref(false)
         colorfull day!
       </h1>
     </div>
-
-    <div
-      class="container"
-      v-for="j in 9"
-      :key="`container-toothbrush-${j}`"
-      :style="`top: ${j * 10}%`"
-    >
-      <template v-for="i in 15" :key="`toothbrush-${i}`">
-        <ToothBrush
-          :id="`toothbrush-${i}`"
-          :delay="`${i * 0.4 + 0.2 + j * 0.2}s`"
-          :class="{ hide, animation: !hide }"
-          @click="hide = true"
-        />
-        <ToothBrush
-          :id="`toothbrush-${i}`"
-          :class="{ hide, animation: !hide }"
-          :delay="`${i * 0.4 + 0.5 + j * 0.2}s`"
-          color3="#f219dd"
-          color4="#7c1477"
-          @click="hide = true"
-        />
-      </template>
-    </div>
+    <ToothBrush
+      v-for="(element, i) in elements"
+      ref="itemRefs"
+      :key="`${i}-toothbrush`"
+      class="animation"
+      v-bind="{ ...element }"
+      @click="animateGrid(i)"
+    />
   </main>
 </template>
 
@@ -45,27 +116,22 @@ const hide = ref(false)
 
 main {
   position: relative;
-  top: -20%;
-  left: 0;
-  right: 0;
   width: 100%;
   height: 120%;
+  top: -20%;
+  padding-left: 25%;
   background-image: radial-gradient(#ffffff, #ff00ff);
+  display: grid;
+  grid-template-columns: repeat(v-bind(cols), calc(100% / v-bind(cols)));
+  grid-template-rows: repeat(v-bind(rows), 100px);
+  align-items: stretch;
+  align-content: stretch;
 }
-
-.container {
-  position: absolute;
-  display: flex;
-  padding-left: 24rem;
-
-  > .pop {
-    margin-left: -4rem;
-  }
-}
-
 .overlay {
-  position: relative;
+  position: absolute;
   top: 16%;
+  left: 0;
+  width: 100%;
 }
 .overlay::after {
   content: '';
@@ -103,11 +169,26 @@ main {
   letter-spacing: 0.4rem;
 }
 
-.hide {
-  animation-name: hide;
-  animation-duration: 0.3s;
+.popped {
+  transform: scale(1);
+  opacity: 1;
+  &:hover:not(:active) {
+    transform: scale(2);
+    z-index: 9;
+    cursor: pointer;
+  }
+  &:active {
+    transform: scale(0.3);
+  }
+}
+
+.animated {
+  animation-name: popOut;
+  animation-duration: 0.2s;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
+  animation-timing-function: ease-out;
+  animation-delay: 0ms !important;
 }
 
 .animation {
@@ -116,6 +197,7 @@ main {
   animation-duration: 0.2s;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
+  animation-timing-function: ease-out;
 }
 
 @keyframes opacity {
@@ -130,6 +212,9 @@ main {
 
 @keyframes hide {
   0% {
+    transform: scale(2);
+  }
+  30% {
     transform: scale(1);
   }
   100% {
@@ -138,23 +223,32 @@ main {
 }
 
 @keyframes pop {
-  0% {
-    width: 0;
-    height: 0;
+  1% {
+    transform: scale(0);
+    opacity: 0;
   }
-  30% {
-    width: 50px;
-    height: 50px;
-  }
-  90% {
-    width: 120px;
-    height: 120px;
+  50% {
+    transform: scale(1.5);
     opacity: 1;
   }
   100% {
-    width: 100px;
-    height: 100px;
+    transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes popOut {
+  0% {
+    opacity: 1;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0);
   }
 }
 </style>
