@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import ToothBrush from '@/components/ToothBrush.vue'
 
 const rows = 12
-const cols = 10
+const cols = 13
 
 const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
 
@@ -12,10 +12,12 @@ const itemIndices = ref<{ [key: string]: number }>({})
 
 onMounted(() => {
   itemRefs.value.forEach((item) => {
-    item.element.addEventListener('animationend', (e) => {
-      e.target.classList.add('popped')
-      e.target.classList.remove('animation')
-      item.element.removeEventListener('animationend', (e) => {})
+    item.element.addEventListener('animationend', (event) => {
+      const target = event.target as HTMLElement
+
+      target.classList.add('popped')
+      target.classList.remove('animate')
+      item.element.removeEventListener('animationend', () => undefined)
     })
   })
 })
@@ -51,7 +53,7 @@ const animateGrid = (index: number) => {
     }
 
     currentElement.element.classList.add('animated')
-    currentElement.element.classList.remove('animation')
+    currentElement.element.classList.remove('animate')
 
     // currentElement.element.style.animationPlayState = 'paused'
     currentElement.element.style.animationName = 'popOut'
@@ -104,7 +106,7 @@ const getNeighbors = (currentElement: HTMLElement) => {
       v-for="(element, i) in elements"
       ref="itemRefs"
       :key="`${i}-toothbrush`"
-      class="animation"
+      class="animate pop"
       v-bind="{ ...element }"
       @click="animateGrid(i)"
     />
@@ -169,6 +171,17 @@ main {
   letter-spacing: 0.4rem;
 }
 
+.pop {
+  height: 100%;
+  animation-delay: var(--delay);
+  will-change: transform, z-index;
+  transition: transform 0.2s linear, z-index 0.2s linear;
+  svg {
+    height: 200%;
+    transform: rotate(35deg);
+  }
+}
+
 .popped {
   transform: scale(1);
   opacity: 1;
@@ -176,9 +189,6 @@ main {
     transform: scale(2);
     z-index: 9;
     cursor: pointer;
-  }
-  &:active {
-    transform: scale(0.3);
   }
 }
 
@@ -191,7 +201,7 @@ main {
   animation-delay: 0ms !important;
 }
 
-.animation {
+.animate {
   opacity: 0;
   animation-name: pop;
   animation-duration: 0.2s;
