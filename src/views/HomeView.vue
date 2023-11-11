@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref} from 'vue'
+import { ref} from 'vue'
 import ToothBrush from '@/components/ToothBrush.vue'
+import CatComponent from '@/components/CatComponent.vue';
 
 const rows = 15
 const cols = 30
@@ -8,9 +9,16 @@ const cols = 30
 const itemRefs = ref<{ element: HTMLElement }[] | []>([])
 const itemIndices = ref<{ [key: string]: number }>({})
 
+const catRefs = ref<{ element: HTMLElement }[] | []>([])
+const catIndices = ref<{ [key: string]: number }>({})
+
+
+const step = ref(0)
+const steps : string[] = ['toothbrush', 'cat']
+
 const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
 
-const elements = ref(
+const toothbrushes = ref(
   Array.from({ length: rows * cols }).map((_, i) => {
     const row = Math.floor(i / rows)
     const col = i % cols
@@ -22,14 +30,36 @@ const elements = ref(
   })
 )
 
-const animateGrid = (index: number) => {
-  const queue = [itemRefs.value[index]]
+const cats = ref(
+  Array.from({ length: rows * cols }).map((_, i) => {
+    const row = Math.floor(i / rows)
+    const col = i % cols
+    const delay = delayCalculation(col, row)
+    const id = `cat-${i}`
+    catIndices.value[id] = i
+
+    return col % 2 !== 0 ? { color3: '#f219dd', color4: '#7c1477', delay, id } : { delay, id }
+  })
+)
+
+
+const animateGrid = (index: number, items: { element: HTMLElement; }[], indices: { [key: string]: number }) => {
+  
+  const queue = [items[index]]
+
   let timeout: number | undefined = undefined
 
   const animateNext = () => {
     timeout && (timeout = undefined)
-
-    if (!queue.length) return
+    
+    if (!queue.length) {      
+      step.value < steps.length - 1 ? step.value++ : step.value = 0
+      items.forEach(({ element }) => {
+        element.classList.add('animate')
+        element.classList.remove('animate')
+      })
+      return
+    }
 
     const currentElement = queue.shift()
 
@@ -44,7 +74,7 @@ const animateGrid = (index: number) => {
     currentElement.element.classList.remove('animate')
     currentElement.element.style.animationName = 'popOut'
 
-    const neighbors = getNeighbors(currentElement.element)
+    const neighbors = getNeighbors(currentElement.element, items, indices)
     const unanimatedNeighbors = neighbors.filter(
       (neighbor) => !neighbor.element.classList.contains('animated')
     )
@@ -55,12 +85,12 @@ const animateGrid = (index: number) => {
   animateNext()
 }
 
-const getNeighbors = (currentElement: HTMLElement) => {
+const getNeighbors = (currentElement: HTMLElement, items: { element: HTMLElement; }[], indices: { [key: string]: number }) => {
   const id = currentElement.getAttribute('id')!
-  const index = itemIndices.value[id]
+  const index = indices[id]
 
-  const row = Math.floor(index / cols) // usa cols qui
-  const col = index % cols // usa cols qui
+  const row = Math.floor(index / cols) 
+  const col = index % cols 
   const neighbors = [
     { row: row + 1, col: col }, // sotto
     { row: row, col: col - 1 }, // sinistra
@@ -76,25 +106,19 @@ const getNeighbors = (currentElement: HTMLElement) => {
     return row * cols + col
   })
 
-  return neighborIndices.map((index) => itemRefs.value[index])
+  return neighborIndices.map((index) => items[index])
 }
 
-
-onMounted(() => {
-  itemRefs.value.forEach((item) => {
-    item.element.addEventListener('animationend', (event) => {
-      const target = event.target as HTMLElement
-      
+const animationEnd = (event: AnimationEvent) => {
+   const target = event.target as HTMLElement      
       target.classList.add('popped')
       target.classList.remove('animate')
-      item.element.removeEventListener('animationend', () => undefined)
-    })
-  })
-})
+}
+
 </script>
 
 <template>
-  <main>
+  <main ref="main">
     <div class="overlay">
       <h1 class="overlay-title">
         Have a <br />
@@ -102,15 +126,32 @@ onMounted(() => {
       </h1>
     </div>
 
-    <ToothBrush
-      v-for="(element, i) in elements"
-      :key="`${i}-toothbrush`"
-      ref="itemRefs"
-      class="animate pop"
-      :style="`--delay: ${element.delay}`"
-      v-bind="{ ...element }"
-      @click="animateGrid(i)"
-    />
+    <template v-if="steps[step] === 'toothbrush'">
+      <ToothBrush
+        v-for="(element, i) in toothbrushes"
+        :key="`${i}-toothbrush`"
+        ref="itemRefs"
+        class="animate pop toothbrush"
+        :style="`--delay: ${element.delay}`"
+        v-bind="{ ...element }"
+        @animationend.prevent="animationEnd"
+        @click="animateGrid(i, itemRefs, itemIndices)"
+      />
+    </template>
+
+
+    <template v-if="steps[step] === 'cat'">
+      <CatComponent
+       v-for="(element, j) in cats"
+       :key="`${j}-cat`"
+       ref="catRefs"
+       class="animate pop cat"
+       :style="`--delay: ${element.delay}`"
+       v-bind="{ ...element }"
+       @animationend.prevent="animationEnd"
+       @click="animateGrid(j, catRefs, catIndices)"
+     />
+    </template>
   </main>
 </template>
 
@@ -172,10 +213,15 @@ main {
   animation-delay: var(--delay);
   will-change: transform, z-index;
   transition: transform 0.2s linear, z-index 0.2s linear;
-  svg {
-    height: 200%;
-    transform: rotate(35deg);
-  }
+  
+}
+.pop.toothbrush svg {
+  height: 200%;
+  transform: rotate(35deg);
+}
+.pop.cat svg {
+  height: 150%;
+  transform: rotate(15deg);
 }
 
 .popped {
