@@ -1,53 +1,88 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import ToothBrush from '@/components/ToothBrush.vue'
 import CatComponent from '@/components/CatComponent.vue'
+import DogComponent from '@/components/DogComponent.vue'
+import { computed } from 'vue'
+
+type NameComponent = 'toothbrushes' | 'cats' | 'dogs'
+
+type ComponentData = {
+  elements: { color3?: string; color4?: string; delay: string; id: string }[]
+  refs: { element: HTMLElement }[] | []
+  indices: { [key: string]: number } | {}
+  bgColor: string
+}
 
 const rows = 15
-const cols = 30
-
-const itemRefs = ref<{ element: HTMLElement }[] | []>([])
-const itemIndices = ref<{ [key: string]: number }>({})
-
-const catRefs = ref<{ element: HTMLElement }[] | []>([])
-const catIndices = ref<{ [key: string]: number }>({})
+const cols = 20
 
 const step = ref(0)
-const steps: string[] = ['toothbrush', 'cat']
+const steps: NameComponent[] = ['toothbrushes', 'cats', 'dogs']
 const gridAnimated = ref(false)
 
 const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
 
-const toothbrushes = ref(
-  Array.from({ length: rows * cols }).map((_, i) => {
-    const row = Math.floor(i / rows)
-    const col = i % cols
-    const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
-    const id = `toothbrush-${i}`
-    itemIndices.value[id] = i
+const toothbrushRefs = ref<{ element: HTMLElement }[] | []>([])
+const toothbrushIndices = ref<{ [key: string]: number }>({})
+const catRefs = ref<{ element: HTMLElement }[] | []>([])
+const catIndices = ref<{ [key: string]: number }>({})
+const dogRefs = ref<{ element: HTMLElement }[] | []>([])
+const dogIndices = ref<{ [key: string]: number }>({})
 
-    return col % 2 !== 0 ? { color3: '#f219dd', color4: '#7c1477', delay, id } : { delay, id }
-  })
-)
+const toothbrushes = Array.from({ length: rows * cols }).map((_, i) => {
+  const row = Math.floor(i / rows)
+  const col = i % cols
+  const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
+  const id = `toothbrush-${i}`
+  toothbrushIndices.value[id] = i
 
-const cats = ref(
-  Array.from({ length: rows * cols }).map((_, i) => {
-    const row = Math.floor(i / rows)
-    const col = i % cols
-    const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
-    const id = `cat-${i}`
-    catIndices.value[id] = i
+  return col % 2 !== 0 ? { color3: '#f219dd', color4: '#7c1477', delay, id } : { delay, id }
+})
 
-    return col % 2 !== 0 ? { color3: '#f219dd', color4: '#7c1477', delay, id } : { delay, id }
-  })
-)
+const cats = Array.from({ length: rows * cols }).map((_, i) => {
+  const row = Math.floor(i / rows)
+  const col = i % cols
+  const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
+  const id = `cat-${i}`
+  catIndices.value[id] = i
 
-const animateGrid = (
-  index: number,
-  items: { element: HTMLElement }[],
-  indices: { [key: string]: number }
-) => {
-  const queue = [items[index]]
+  return col % 2 !== 0 ? { color3: '#f219dd', color4: '#7c1477', delay, id } : { delay, id }
+})
+
+const dogs = Array.from({ length: rows * cols }).map((_, i) => {
+  const row = Math.floor(i / rows)
+  const col = i % cols
+  const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
+  const id = `dog-${i}`
+  dogIndices.value[id] = i
+
+  return col % 2 !== 0 ? { color3: '#ffa500', color4: '#ff4500', delay, id } : { delay, id }
+})
+
+const mapComponentsData: Record<NameComponent, ComponentData> = reactive({
+  toothbrushes: {
+    elements: toothbrushes,
+    refs: toothbrushRefs,
+    indices: toothbrushIndices,
+    bgColor: '#FF00FF'
+  },
+  cats: {
+    elements: cats,
+    refs: catRefs,
+    indices: catIndices,
+    bgColor: '#00FFFF'
+  },
+  dogs: {
+    elements: dogs,
+    refs: dogRefs,
+    indices: dogIndices,
+    bgColor: '#d64620'
+  }
+})
+
+const animateGrid = (index: number, nameComponent: NameComponent) => {
+  const queue = [mapComponentsData[nameComponent].refs[index]]
 
   let timeout: number | undefined = undefined
 
@@ -56,7 +91,7 @@ const animateGrid = (
 
     if (!queue.length) {
       step.value < steps.length - 1 ? step.value++ : (step.value = 0)
-      items.forEach(({ element }) => {
+      mapComponentsData[nameComponent].refs.forEach(({ element }) => {
         element.classList.add('animate')
         element.classList.remove('animate')
       })
@@ -77,7 +112,11 @@ const animateGrid = (
     currentElement.element.classList.remove('animate')
     currentElement.element.style.animationName = 'popOut'
 
-    const neighbors = getNeighbors(currentElement.element, items, indices)
+    const neighbors = getNeighbors(
+      currentElement.element,
+      mapComponentsData[nameComponent].refs,
+      mapComponentsData[nameComponent].indices
+    )
     const unanimatedNeighbors = neighbors.filter(
       (neighbor) => !neighbor.element.classList.contains('animated')
     )
@@ -121,6 +160,8 @@ const animationEnd = (event: AnimationEvent) => {
   target.classList.add('popped')
   target.classList.remove('animate')
 }
+
+const color = computed(() => mapComponentsData[steps[step.value]].bgColor)
 </script>
 
 <template>
@@ -132,40 +173,58 @@ const animationEnd = (event: AnimationEvent) => {
       </h1>
     </div>
 
-    <template v-if="steps[step] === 'toothbrush'">
+    <template v-if="steps[step] === 'toothbrushes'">
       <ToothBrush
-        v-for="(element, i) in toothbrushes"
+        v-for="(element, i) in mapComponentsData['toothbrushes'].elements"
         :key="`${i}-toothbrush`"
-        ref="itemRefs"
+        ref="toothbrushRefs"
         class="animate pop toothbrush"
         :style="`--delay: ${element.delay}`"
         v-bind="{ ...element }"
         @animationend.prevent="animationEnd"
-        @click="animateGrid(i, itemRefs, itemIndices)"
+        @click="animateGrid(i, 'toothbrushes')"
       />
       <ToothBrush
-        v-if="steps[step] === 'toothbrush' && gridAnimated"
+        v-if="steps[step] === 'toothbrushes' && gridAnimated"
         class="pulse toothbrush element-pulse"
-        v-bind="{ ...itemRefs[1], id: 'toothbrush' }"
+        v-bind="{ ...mapComponentsData['toothbrushes'].refs[1], id: 'toothbrush' }"
       />
     </template>
 
-    <template v-if="steps[step] === 'cat'">
+    <template v-if="steps[step] === 'cats'">
       <CatComponent
-        v-for="(element, j) in cats"
-        :key="`${j}-cat`"
+        v-for="(element, i) in mapComponentsData['cats'].elements"
+        :key="`${i}-cat`"
         ref="catRefs"
         class="animate pop cat"
         :style="`--delay: ${element.delay}`"
         v-bind="{ ...element }"
         @animationend.prevent="animationEnd"
-        @click="animateGrid(j, catRefs, catIndices)"
+        @click="animateGrid(i, 'cats')"
       />
     </template>
     <CatComponent
-      v-if="steps[step] === 'cat' && gridAnimated"
+      v-if="steps[step] === 'cats' && gridAnimated"
       class="pulse cat element-pulse"
-      v-bind="{ ...cats[1], id: 'cat' }"
+      v-bind="{ ...mapComponentsData['cats'].refs[1], id: 'cat' }"
+    />
+
+    <template v-if="steps[step] === 'dogs'">
+      <DogComponent
+        v-for="(element, i) in mapComponentsData['dogs'].elements"
+        :key="`${i}-dog`"
+        ref="dogRefs"
+        class="animate pop dog"
+        :style="`--delay: ${element.delay}`"
+        v-bind="{ ...element }"
+        @animationend.prevent="animationEnd"
+        @click="animateGrid(i, 'dogs')"
+      />
+    </template>
+    <DogComponent
+      v-if="steps[step] === 'dogs' && gridAnimated"
+      class="pulse dog element-pulse"
+      v-bind="{ ...mapComponentsData['dogs'].refs[1], id: 'dog' }"
     />
   </main>
 </template>
@@ -177,12 +236,23 @@ main {
   height: 120%;
   top: -20%;
   padding-left: 25%;
-  background-image: radial-gradient(#ffffff, #ff00ff);
+  background-color: v-bind(color);
   display: grid;
   grid-template-columns: repeat(v-bind(cols), 1fr);
   grid-template-rows: repeat(v-bind(rows), 1fr);
   align-items: stretch;
   align-content: stretch;
+  transition: background-color 2s;
+  &::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(#fff, #ffffff00);
+  }
 }
 
 .overlay {
@@ -231,6 +301,11 @@ main {
   height: 200%;
   transform: rotate(35deg);
 }
+
+.dog svg {
+  height: 150%;
+  transform: rotate(-15deg);
+}
 .cat svg {
   height: 150%;
   transform: rotate(15deg);
@@ -264,6 +339,7 @@ main {
 }
 
 .element-pulse {
+  z-index: 10;
   position: absolute;
   bottom: 10%;
   right: 10%;
@@ -272,7 +348,6 @@ main {
   animation-iteration-count: 3;
   animation-fill-mode: forwards;
   animation-duration: 0.5s;
-  z-index: 10;
   width: 5vw;
   height: 5vw;
 }
