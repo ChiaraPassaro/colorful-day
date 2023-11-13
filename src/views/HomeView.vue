@@ -1,18 +1,10 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
+import type { NameComponent, ComponentData } from '@/types/Elements'
+
 import ToothBrush from '@/components/ToothBrush.vue'
 import CatComponent from '@/components/CatComponent.vue'
 import DogComponent from '@/components/DogComponent.vue'
-import { computed } from 'vue'
-
-type NameComponent = 'toothbrushes' | 'cats' | 'dogs'
-
-type ComponentData = {
-  elements: { color3?: string; color4?: string; delay: string; id: string }[]
-  refs: { element: HTMLElement }[] | []
-  indices: { [key: string]: number } | {}
-  bgColor: string
-}
 
 const rows = 15
 const cols = 20
@@ -21,77 +13,59 @@ const step = ref(0)
 const steps: NameComponent[] = ['toothbrushes', 'cats', 'dogs']
 const gridAnimated = ref(false)
 
-const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
-
 const toothbrushRefs = ref<{ element: HTMLElement }[] | []>([])
-const toothbrushIndices = ref<{ [key: string]: number }>({})
 const catRefs = ref<{ element: HTMLElement }[] | []>([])
-const catIndices = ref<{ [key: string]: number }>({})
 const dogRefs = ref<{ element: HTMLElement }[] | []>([])
-const dogIndices = ref<{ [key: string]: number }>({})
 
-const toothbrushes = Array.from({ length: rows * cols }).map((_, i) => {
-  const row = Math.floor(i / rows)
-  const col = i % cols
-  const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
-  const id = `toothbrush-${i}`
-  toothbrushIndices.value[id] = i
+const delayCalculation = (i: number, j: number) => `${i * 0.1 + j * 0.2}s`
+const createElements = (type: string, colors: { color3: string; color4: string }) => {
+  const elements = Array.from({ length: rows * cols }).map((_, i) => {
+    const row = Math.floor(i / rows)
+    const col = i % cols
+    const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
+    const id = `${type}-${i}`
 
-  return col % 2 !== 0 ? { color3: '#f219dd', color4: '#7c1477', delay, id } : { delay, id }
-})
+    return col % 2 !== 0 ? { ...colors, delay, id } : { delay, id }
+  })
 
-const cats = Array.from({ length: rows * cols }).map((_, i) => {
-  const row = Math.floor(i / rows)
-  const col = i % cols
-  const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
-  const id = `cat-${i}`
-  catIndices.value[id] = i
+  const indices = elements.reduce((acc, { id }, index) => ({ ...acc, [id]: index }), {})
 
-  return col % 2 !== 0 ? { color3: '#f219dd', color4: '#7c1477', delay, id } : { delay, id }
-})
+  return { elements, indices }
+}
 
-const dogs = Array.from({ length: rows * cols }).map((_, i) => {
-  const row = Math.floor(i / rows)
-  const col = i % cols
-  const delay = delayCalculation(rows - 1 - row, cols - 1 - col)
-  const id = `dog-${i}`
-  dogIndices.value[id] = i
-
-  return col % 2 !== 0 ? { color3: '#ffa500', color4: '#ff4500', delay, id } : { delay, id }
-})
+const toothbrushes = createElements('toothbrush', { color3: '#f219dd', color4: '#7c1477' })
+const cats = createElements('cat', { color3: '#f219dd', color4: '#7c1477' })
+const dogs = createElements('dog', { color3: '#ffa500', color4: '#ff4500' })
 
 const mapComponentsData: Record<NameComponent, ComponentData> = reactive({
   toothbrushes: {
-    elements: toothbrushes,
-    refs: toothbrushRefs,
-    indices: toothbrushIndices,
-    bgColor: '#FF00FF'
+    ...toothbrushes,
+    bgColor: '#FF00FF',
+    refs: toothbrushRefs
   },
   cats: {
-    elements: cats,
-    refs: catRefs,
-    indices: catIndices,
-    bgColor: '#00FFFF'
+    ...cats,
+    bgColor: '#00FFFF',
+    refs: catRefs
   },
   dogs: {
-    elements: dogs,
-    refs: dogRefs,
-    indices: dogIndices,
-    bgColor: '#d64620'
+    ...dogs,
+    bgColor: '#d64620',
+    refs: dogRefs
   }
 })
 
 const animateGrid = (index: number, nameComponent: NameComponent) => {
-  const queue = [mapComponentsData[nameComponent].refs[index]]
-
   let timeout: number | undefined = undefined
+
+  const queue = [mapComponentsData[nameComponent].refs[index]]
 
   const animateNext = () => {
     timeout && (timeout = undefined)
 
     if (!queue.length) {
       step.value < steps.length - 1 ? step.value++ : (step.value = 0)
-      mapComponentsData[nameComponent].refs.forEach(({ element }) => {
+      mapComponentsData[nameComponent].refs.forEach(({ element }: { element: HTMLElement }) => {
         element.classList.add('animate')
         element.classList.remove('animate')
       })
@@ -104,7 +78,7 @@ const animateGrid = (index: number, nameComponent: NameComponent) => {
     if (!currentElement) return
 
     if (currentElement.element.classList.contains('animated')) {
-      requestAnimationFrame(animateNext)
+      timeout = setTimeout(animateNext, 1000 / 90)
       return
     }
 
@@ -122,7 +96,7 @@ const animateGrid = (index: number, nameComponent: NameComponent) => {
     )
 
     queue.push(...unanimatedNeighbors)
-    timeout = setTimeout(animateNext, 1)
+    animateNext()
   }
   animateNext()
 }
@@ -242,7 +216,7 @@ main {
   grid-template-rows: repeat(v-bind(rows), 1fr);
   align-items: stretch;
   align-content: stretch;
-  transition: background-color 2s;
+  transition: background-color 4s;
   &::before {
     content: '';
     display: block;
@@ -251,7 +225,7 @@ main {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: radial-gradient(#fff, #ffffff00);
+    background-image: radial-gradient(at bottom left, #fff, #ffffff00);
   }
 }
 
@@ -314,6 +288,7 @@ main {
 .popped {
   transform: scale(1);
   opacity: 1;
+
   &:hover:not(:active) {
     transform: scale(1.5);
     cursor: pointer;
@@ -322,7 +297,7 @@ main {
 
 .animated {
   animation-name: popOut;
-  animation-duration: 0.2s;
+  animation-duration: 0.05s;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
   animation-timing-function: ease-out;
